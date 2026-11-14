@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timbangan Pintar Bersuara</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body {
+      margin: 0; padding: 14px;
+      background: #0f172a; color: #f8fafc;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .container { width: 100%; max-width: 460px; }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    h2 { margin: 0; font-size: 1.15rem; color: #38bdf8; }
+    .btn-ready {
+      background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8;
+      padding: 6px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
+    }
+
+    /* Layar Tampilan Utama */
+    .display {
+      background: #1e293b; border: 2px solid #334155;
+      border-radius: 14px; padding: 14px; margin-bottom: 12px;
+    }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .label { font-size: 0.85rem; color: #94a3b8; }
+    .badge {
+      background: #0284c7; color: #fff; padding: 4px 10px;
+      border-radius: 8px; font-weight: bold; font-size: 0.85rem; text-align: right;
+    }
+    .badge.empty { background: #475569; color: #cbd5e1; }
+    .weight-box {
+      font-size: 2.3rem; font-weight: 800; text-align: right;
+      color: #facc15; letter-spacing: 1px; margin: 6px 0;
+    }
+    .total-box {
+      font-size: 1.65rem; font-weight: 700; text-align: right;
+      color: #4ade80; border-top: 1px dashed #475569; padding-top: 8px;
+    }
+
+    /* Section Title */
+    .sec-title {
+      font-size: 0.8rem; color: #94a3b8; text-transform: uppercase;
+      letter-spacing: 0.5px; margin: 10px 0 6px; font-weight: 600;
+    }
+
+    /* Grid 9 Kategori Sampah (Tombol 1 - 9 pada alat asli) */
+    .cat-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;
+    }
+    .btn-cat {
+      background: #1e293b; color: #f1f5f9; border: 1px solid #334155;
+      padding: 10px 6px; border-radius: 10px; cursor: pointer;
+      text-align: left; transition: 0.1s;
+    }
+    .btn-cat strong { display: block; font-size: 0.85rem; color: #38bdf8; }
+    .btn-cat span { display: block; font-size: 0.78rem; margin: 2px 0; }
+    .btn-cat small { display: block; font-size: 0.72rem; color: #94a3b8; }
+    .btn-cat.active {
+      background: #0369a1; border-color: #facc15; outline: 2px solid #facc15;
+    }
+    .btn-cat.active strong, .btn-cat.active small { color: #fef08a; }
+
+    /* Keypad Input Berat & Tombol Aksi */
+    .keypad {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    }
+    .keypad button {
+      padding: 15px 6px; font-size: 1.15rem; font-weight: bold;
+      border: none; border-radius: 10px; cursor: pointer;
+    }
+    .keypad button:active, .btn-cat:active { transform: scale(0.96); }
+    .btn-num { background: #334155; color: #ffffff; }
+    .btn-tare { background: #0284c7; color: #ffffff; font-size: 0.9rem; }
+    .btn-cancel { background: #dc2626; color: #ffffff; font-size: 0.9rem; }
+    .btn-speak { background: #16a34a; color: #ffffff; grid-column: span 2; font-size: 1rem; }
+    .btn-save { background: #d97706; color: #ffffff; grid-column: span 2; font-size: 0.95rem; }
+
+    /* Riwayat Transaksi */
+    .history {
+      margin-top: 14px; background: #1e293b; border-radius: 12px; padding: 12px;
+    }
+    .history-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+    .btn-csv {
+      background: #475569; color: #fff; border: none; padding: 6px 10px;
+      font-size: 0.78rem; border-radius: 8px; cursor: pointer;
+    }
+    ul { list-style: none; padding: 0; margin: 0; max-height: 150px; overflow-y: auto; font-size: 0.85rem; }
+    li { padding: 6px 0; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>TIMBANGAN PINTAR BERSUARA</h2>
+      <button class="btn-ready" onclick="putarAntreanMP3([34])">🔊 Tes Siap</button>
+    </div>
+
+    <div class="display">
+      <div class="row">
+        <span class="label">Jenis Sampah:</span>
+        <span class="badge empty" id="catLabel">Belum dipilih (1–9)</span>
+      </div>
+      <div class="weight-box"><span id="weightDisplay">0</span> kg</div>
+      <div class="total-box" id="totalDisplay">Rp 0</div>
+    </div>
+
+    <div class="sec-title">1. Pilih Kategori Sampah (Tombol 1–9)</div>
+    <div class="cat-grid" id="catGrid"></div>
+
+    <div class="sec-title">2. Masukkan Angka Berat (kg) & Eksekusi</div>
+    <div class="keypad">
+      <button class="btn-num" onclick="inputChar('1')">1</button>
+      <button class="btn-num" onclick="inputChar('2')">2</button>
+      <button class="btn-num" onclick="inputChar('3')">3</button>
+      <button class="btn-tare" onclick="taraBerat()">*<br><small>Tara (0 kg)</small></button>
+
+      <button class="btn-num" onclick="inputChar('4')">4</button>
+      <button class="btn-num" onclick="inputChar('5')">5</button>
+      <button class="btn-num" onclick="inputChar('6')">6</button>
+      <button class="btn-cancel" onclick="batalReset()">D<br><small>Batal</small></button>
+
+      <button class="btn-num" onclick="inputChar('7')">7</button>
+      <button class="btn-num" onclick="inputChar('8')">8</button>
+      <button class="btn-num" onclick="inputChar('9')">9</button>
+      <button class="btn-num" onclick="ulangSuara()" style="font-size:0.9rem;">↻<br><small>Ulangi</small></button>
+
+      <button class="btn-num" onclick="inputChar('0')">0</button>
+      <button class="btn-num" onclick="inputChar('.')">.</button>
+      <button class="btn-speak" onclick="hitungDanBicara()"># HITUNG & SUARA</button>
+
+      <button class="btn-save" style="grid-column: span 4;" onclick="simpanTransaksi()">SIMPAN KE REKAP TRANSAKSI</button>
+    </div>
+
+    <div class="history">
+      <div class="history-header">
+        <strong>Rekap Penimbangan</strong>
+        <button class="btn-csv" onclick="unduhCSV()">Unduh CSV</button>
+      </div>
+      <ul id="historyList"></ul>
+    </div>
+  </div>
+
+  <script>
+    // Daftar 9 kategori sampah & harga per kg sesuai sketch_nov14a.ino
+    const DAFTAR_SAMPAH = {
+      1: { nama: 'Plastik botol bening', harga: 3000,  fileAudio: 25 },
+      2: { nama: 'Plastik gelas',        harga: 2500,  fileAudio: 26 },
+      3: { nama: 'Plastik kresek',       harga: 1000,  fileAudio: 27 },
+      4: { nama: 'Kardus',               harga: 2000,  fileAudio: 28 },
+      5: { nama: 'Kertas putih',         harga: 2500,  fileAudio: 29 },
+      6: { nama: 'Kertas buram',         harga: 1500,  fileAudio: 30 },
+      7: { nama: 'Kaleng aluminium',     harga: 12000, fileAudio: 31 },
+      8: { nama: 'Besi',                 harga: 4000,  fileAudio: 32 },
+      9: { nama: 'Botol kaca',           harga: 500,   fileAudio: 33 }
+    };
+
+    let kategoriTerpilih = 0; // 0 = belum pilih, 1-9 = jenis sampah
+    let beratStr = '';
+    let antreanTerakhir = [];
+    let riwayat = [];
+    let audioAktif = null;
+    let idSesiAudio = 0;
+
+    // Render tombol 9 kategori sampah
+    const catGrid = document.getElementById('catGrid');
+    for (let i = 1; i <= 9; i++) {
+      const item = DAFTAR_SAMPAH[i];
+      const btn = document.createElement('button');
+      btn.className = 'btn-cat';
+      btn.id = 'cat-' + i;
+      btn.onclick = () => pilihKategori(i);
+      btn.innerHTML = `<strong>[${i}] Rp ${item.harga.toLocaleString('id-ID')}/kg</strong><span>${item.nama}</span>`;
+      catGrid.appendChild(btn);
+    }
+
+    // Pemutar antrean file MP3 lokal dari folder ./mp3
+    async function putarAntreanMP3(daftarNomor) {
+      idSesiAudio++;
+      const sesiIni = idSesiAudio;
+
+      if (audioAktif) {
+        audioAktif.pause();
+        audioAktif.currentTime = 0;
+      }
+
+      for (const nomor of daftarNomor) {
+        if (sesiIni !== idSesiAudio || !nomor) break;
+        await new Promise((resolve) => {
+          const path = `./mp3/${String(nomor).padStart(4, '0')}.mp3`;
+          const audio = new Audio(path);
+          audioAktif = audio;
+          audio.onended = resolve;
+          audio.onerror = resolve;
+          audio.play().catch(resolve);
+        });
+      }
+    }
+
+    // Logika ucapkanRatusan() persis seperti kode Arduino
+    function ratusanKeAntrean(n) {
+      const urutan = [];
+      const ratus = Math.floor(n / 100);
+      const sisa = n % 100;
+
+      if (ratus === 1) {
+        urutan.push(15); // "Seratus"
+      } else if (ratus > 1) {
+        urutan.push(ratus, 16); // Angka + "Ratus"
+      }
+
+      if (sisa > 0) {
+        if (sisa < 10) {
+          urutan.push(sisa);
+        } else if (sisa === 10) {
+          urutan.push(10); // "Sepuluh"
+        } else if (sisa === 11) {
+          urutan.push(11); // "Sebelas"
+        } else if (sisa < 20) {
+          urutan.push(sisa % 10, 13); // Satuan + "Belas"
+        } else {
+          urutan.push(Math.floor(sisa / 10), 14); // Puluhan + "Puluh"
+          if (sisa % 10 > 0) {
+            urutan.push(sisa % 10);
+          }
+        }
+      }
+      return urutan;
+    }
+
+    // Logika ucapkanAngka() persis seperti kode Arduino
+    function angkaKeAntrean(angka) {
+      angka = Math.floor(Math.abs(angka));
+      if (angka === 0) return [12]; // "Nol"
+
+      const urutan = [];
+      const ribu = Math.floor(angka / 1000);
+      const sisa = angka % 1000;
+
+      if (ribu === 1) {
+        urutan.push(17); // "Seribu"
+      } else if (ribu > 1) {
+        urutan.push(...ratusanKeAntrean(ribu), 18); // Ratusan + "Ribu"
+      }
+
+      if (sisa > 0) {
+        urutan.push(...ratusanKeAntrean(sisa));
+      }
+      return urutan;
+    }
+
+    // Logika ucapkanBerat() persis seperti kode Arduino (bulat 1 desimal)
+    function beratKeAntrean(beratKg) {
+      const totalPersepuluh = Math.round(beratKg * 10);
+      const bulat = Math.floor(totalPersepuluh / 10);
+      const desimal = totalPersepuluh % 10;
+
+      const urutan = [...angkaKeAntrean(bulat)];
+      if (desimal > 0) {
+        urutan.push(19, desimal); // "Koma" + angka desimal
+      }
+      urutan.push(20); // "Kilogram"
+      return urutan;
+    }
+
+    function updateLayar() {
+      const badge = document.getElementById('catLabel');
+      if (kategoriTerpilih === 0) {
+        badge.textContent = 'Belum dipilih (1–9)';
+        badge.classList.add('empty');
+      } else {
+        const info = DAFTAR_SAMPAH[kategoriTerpilih];
+        badge.textContent = `${kategoriTerpilih}. ${info.nama} (Rp ${info.harga.toLocaleString('id-ID')}/kg)`;
+        badge.classList.remove('empty');
+      }
+
+      const berat = parseFloat(beratStr) || 0;
+      document.getElementById('weightDisplay').textContent = beratStr || '0';
+
+      if (kategoriTerpilih > 0 && berat >= 0.05) {
+        const hargaKg = DAFTAR_SAMPAH[kategoriTerpilih].harga;
+        const totalHarga = Math.round((berat * hargaKg) / 100) * 100;
+        document.getElementById('totalDisplay').textContent = 'Rp ' + totalHarga.toLocaleString('id-ID');
+      } else {
+        document.getElementById('totalDisplay').textContent = 'Rp 0';
+      }
+    }
+
+    function pilihKategori(nomor) {
+      kategoriTerpilih = nomor;
+      document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
+      document.getElementById('cat-' + nomor).classList.add('active');
+      updateLayar();
+      putarAntreanMP3([DAFTAR_SAMPAH[nomor].fileAudio]); // File 0025 s.d. 0033
+    }
+
+    function inputChar(ch) {
+      putarAntreanMP3([39]); // File 0039: Beep tombol
+      if (ch === '.' && beratStr.includes('.')) return;
+      if (beratStr === '' && ch === '.') beratStr = '0.';
+      else if (beratStr.length < 6) beratStr += ch;
+      updateLayar();
+    }
+
+    function taraBerat() {
+      beratStr = '';
+      updateLayar();
+      putarAntreanMP3([35]); // File 0035: "Tara berhasil"
+    }
+
+    function batalReset() {
+      kategoriTerpilih = 0;
+      beratStr = '';
+      document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
+      updateLayar();
+      putarAntreanMP3([38]); // File 0038: "Dibatalkan"
+    }
+
+    function hitungDanBicara() {
+      if (kategoriTerpilih === 0) {
+        putarAntreanMP3([36]); // File 0036: "Pilih jenis sampah dulu"
+        return;
+      }
+
+      const berat = parseFloat(beratStr) || 0;
+      if (berat < 0.05) {
+        putarAntreanMP3([37]); // File 0037: "Beban masih kosong"
+        return;
+      }
+
+      const info = DAFTAR_SAMPAH[kategoriTerpilih];
+      const totalHarga = Math.round((berat * info.harga) / 100) * 100;
+
+      // Urutan pembacaan hasil persis seperti tombol '#' di kode Arduino
+      antreanTerakhir = [
+        info.fileAudio,              // Nama sampah (25-33)
+        23,                          // "Berat"
+        ...beratKeAntrean(berat),    // Angka + "Koma" + Desimal + "Kilogram" (20)
+        24,                          // "Total harga"
+        ...angkaKeAntrean(totalHarga), // Nominal angka
+        21                           // "Rupiah"
+      ];
+      putarAntreanMP3(antreanTerakhir);
+    }
+
+    function ulangSuara() {
+      if (antreanTerakhir.length > 0) {
+        putarAntreanMP3(antreanTerakhir);
+      } else {
+        putarAntreanMP3([39]);
+      }
+    }
+
+    function simpanTransaksi() {
+      const berat = parseFloat(beratStr) || 0;
+      if (kategoriTerpilih === 0) return putarAntreanMP3([36]);
+      if (berat < 0.05) return putarAntreanMP3([37]);
+
+      const info = DAFTAR_SAMPAH[kategoriTerpilih];
+      const totalHarga = Math.round((berat * info.harga) / 100) * 100;
+      const beratBulat = (Math.round(berat * 10) / 10).toFixed(1);
+      const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+      riwayat.unshift({ waktu, jenis: info.nama, berat: beratBulat, total: totalHarga });
+      renderRiwayat();
+      putarAntreanMP3([39]);
+      beratStr = '';
+      updateLayar();
+    }
+
+    function renderRiwayat() {
+      const ul = document.getElementById('historyList');
+      ul.innerHTML = riwayat.map(r =>
+        `<li><span>[${r.waktu}] ${r.jenis} (${r.berat} kg)</span><strong>Rp ${r.total.toLocaleString('id-ID')}</strong></li>`
+      ).join('');
+    }
+
+    function unduhCSV() {
+      if (riwayat.length === 0) return alert('Belum ada data transaksi.');
+      let csv = 'Waktu,Jenis Sampah,Berat (kg),Total Harga (Rp)\n';
+      riwayat.forEach(r => { csv += `${r.waktu},"${r.jenis}",${r.berat},${r.total}\n`; });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'rekap-bank-sampah.csv';
+      a.click();
+    }
+  </script>
+</body>
+</html>
